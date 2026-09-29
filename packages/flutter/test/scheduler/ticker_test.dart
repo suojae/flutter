@@ -44,7 +44,8 @@ void main() {
     }
     expect(error, isNotNull);
     expect(error!.diagnostics.length, 3);
-    expect(error.diagnostics.last, isA<DiagnosticsProperty<Ticker>>());
+    expect(error.diagnostics.last, isA<DiagnosticsBlock>());
+    expect(error.diagnostics.last.value, ticker);
     expect(
       error.toStringDeep(),
       startsWith(
@@ -52,8 +53,8 @@ void main() {
         '   A ticker was started twice.\n'
         '   A ticker that is already active cannot be started again without\n'
         '   first stopping it.\n'
-        '   The affected ticker was:\n'
-        '     Ticker()\n',
+        '   The affected ticker was: Ticker():\n'
+        '     The stack trace when the Ticker was actually created was:\n',
       ),
     );
 
@@ -113,6 +114,40 @@ void main() {
 
     expect(ticker, hasOneLineDescription);
     expect(ticker.toString(debugIncludeStack: true), contains('testFunction'));
+  });
+
+  testWidgets('Ticker.describeForError includes the creation stack trace', (
+    WidgetTester tester,
+  ) async {
+    late Ticker ticker;
+    addTearDown(() => ticker.dispose());
+
+    void testFunction() {
+      ticker = Ticker((Duration _) {});
+    }
+
+    testFunction();
+
+    final DiagnosticsNode node = ticker.describeForError('The ticker was');
+    expect(node.value, ticker);
+    expect(node.toDescription(), 'Ticker()');
+    final DiagnosticsNode stackTrace = node.getProperties().single;
+    expect(stackTrace, isA<DiagnosticsStackTrace>());
+    expect(stackTrace.name, 'The stack trace when the Ticker was actually created was');
+    final List<String> frames = stackTrace
+        .getProperties()
+        .map((DiagnosticsNode frame) => frame.toDescription())
+        .toList();
+    expect(frames, contains(contains('testFunction')));
+
+    // Stack frames are not wrapped when the error is rendered.
+    final String rendered = FlutterError.fromParts(<DiagnosticsNode>[
+      ErrorSummary('A ticker error.'),
+      node,
+    ]).toStringDeep();
+    for (final frame in frames) {
+      expect(rendered, contains(frame));
+    }
   });
 
   testWidgets('Ticker can be sped up with time dilation', (WidgetTester tester) async {

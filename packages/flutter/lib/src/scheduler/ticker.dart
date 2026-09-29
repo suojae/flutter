@@ -73,8 +73,6 @@ abstract class TickerProvider {
 ///
 /// * [TickerProvider], for obtaining a ticker.
 /// * [SchedulerBinding.scheduleFrameCallback], which drives tickers.
-// TODO(jacobr): make Ticker use Diagnosticable to simplify reporting errors
-// related to a ticker.
 class Ticker {
   /// Creates a ticker that will call the provided callback once per frame while
   /// running.
@@ -209,9 +207,26 @@ class Ticker {
 
   /// Adds a debug representation of a [Ticker] optimized for including in error
   /// messages.
+  ///
+  /// In debug builds, this includes the stack trace from when the ticker was
+  /// created.
   DiagnosticsNode describeForError(String name) {
-    // TODO(jacobr): make this more structured.
-    return DiagnosticsProperty<Ticker>(name, this, description: toString(debugIncludeStack: true));
+    final properties = <DiagnosticsNode>[];
+    assert(() {
+      properties.add(
+        DiagnosticsStackTrace(
+          'The stack trace when the $runtimeType was actually created was',
+          _debugCreationStack,
+        ),
+      );
+      return true;
+    }());
+    return DiagnosticsBlock(
+      name: name,
+      value: this,
+      description: toString(),
+      properties: properties,
+    );
   }
 
   /// Stops calling this [Ticker]'s callback.

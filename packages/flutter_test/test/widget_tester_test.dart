@@ -556,7 +556,7 @@ void main() {
         'calling dispose() on the AnimationController itself. Otherwise,\n'
         'the ticker will leak.\n',
       );
-      expect(error.diagnostics.last, isA<DiagnosticsProperty<Ticker>>());
+      expect(error.diagnostics.last, isA<DiagnosticsBlock>());
       expect(error.diagnostics.last.value, ticker);
       expect(
         error.toStringDeep(),
@@ -567,8 +567,8 @@ void main() {
           '   Tickers used by AnimationControllers should be disposed by\n'
           '   calling dispose() on the AnimationController itself. Otherwise,\n'
           '   the ticker will leak.\n'
-          '   The offending ticker was:\n'
-          '     _TestTicker()\n',
+          '   The offending ticker was: _TestTicker():\n'
+          '     The stack trace when the _TestTicker was actually created was:\n',
         ),
       );
     }
